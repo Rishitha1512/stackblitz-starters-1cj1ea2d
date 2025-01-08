@@ -1,15 +1,51 @@
+// app.js
+require('dotenv').config();
 const express = require('express');
-const { resolve } = require('path');
+const mongoose = require('mongoose');
+const MenuItem = require('./schema');  // Assuming your schema file is called schema.js
 
 const app = express();
-const port = 3010;
 
-app.use(express.static('static'));
+// Middleware to parse JSON request bodies
+app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.sendFile(resolve(__dirname, 'pages/index.html'));
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('Connected to MongoDB Atlas'))
+  .catch(err => console.error('Failed to connect to MongoDB', err.message));
+
+// POST /menu route
+app.post('/menu', async (req, res) => {
+  const { name, description, price } = req.body;
+
+  try {
+    const menuItem = new MenuItem({ name, description, price });
+    await menuItem.save();
+    res.status(201).json({
+      message: 'Menu item created successfully',
+      menuItem
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: error.message
+    });
+  }
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+// GET /menu route
+app.get('/menu', async (req, res) => {
+  try {
+    const menuItems = await MenuItem.find();
+    res.status(200).json(menuItems);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to fetch menu items'
+    });
+  }
+});
+
+// Start the server
+PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
